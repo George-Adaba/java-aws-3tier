@@ -1,13 +1,13 @@
 # this is a github action workflow file that defines my pipeline for my project
 name: java-aws-3tier CI/CD Pipeline # this is the name of the workflow
 
-on: # this defines the event triggers for the workflow  it can be triggered on push, pull request, or on a schedule 
+on: # this defines the event triggers for the workflow. it will be triggered on push to the main branch
   push:
-    branches: [ main ] # this means the workflow will only be triggered when you push to the main branch
+    branches: [ main ]
 
-jobs: # this defines the jobs that will run as part of the workflow jobs can run sequentially or in parallel but it is parallel by default
+jobs: # this defines the jobs that will run as part of the workflow. jobs run in parallel by default
   build-and-deploy: # this is the name of the job
-    runs-on: ubuntu-latest # when you create a job it runs on a runner and this defines the type of runner to be used
+    runs-on: ubuntu-latest # this defines the type of runner (virtual machine) to be used
     permissions: # this defines the permissions for the job
       contents: read # this gives the job read access to the repository contents
       packages: write # this gives the job write access to the packages in the repository
@@ -17,41 +17,41 @@ jobs: # this defines the jobs that will run as part of the workflow jobs can run
         uses: actions/checkout@v4 # this step checks out the repository so the pipeline can access its contents
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3 # this step installs Java 17 and configures Maven caching on the runner
+        uses: actions/setup-java@v4 # UPGRADED: installs Java 17 and configures Maven caching on the runner
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: 'maven' # cache Maven dependencies to speed up the build
 
       - name: Build with Maven
-        run: mvn clean package -DskipTests # this step runs the maven command to build the project and create a war file in the target directory
+        run: mvn clean package -DskipTests # this step runs the maven command to create a war file in the target directory
 
       - name: SonarQube Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: mvn sonar:sonar -Dsonar.projectKey=spas_project # this step runs a maven command to perform scans on the code using the token and host url
+        run: mvn sonar:sonar -Dsonar.projectKey=spas_project # this step runs code analysis using the token and host url
       
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4 # UPGRADED: uploads the .war file so it can be used in the deployment step
         with:
           name: java-war
           path: target/*.war
 
       - name: deploy to tomcat
-        uses: appleboy/ssh-action@master
+        uses: appleboy/scp-action@v0.1.7 # UPGRADED: uses SCP to securely move the file through the Bastion bridge
         with:
-          # 1. Connection to the Bastion (The Bridge) 
+          # 1. Connection to the Bastion (The Bridge/Jump Server) 
           proxy_host: ${{ secrets.BASTION_IP }}
           proxy_username: ec2-user
           proxy_key: ${{ secrets.SSH_PRIVATE_KEY }}
           
-          # 2. Connection to the Tomcat (The Destination)
+          # 2. Connection to the Tomcat (The Private Destination)
           host: ${{ secrets.TOMCAT_PRIVATE_IP }}
           username: ec2-user
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           
-          # 3. The Payload
+          # 3. The Payload (The actual file transfer)
           source: "target/*.war"
           target: "/opt/tomcat/webapps/"
-          strip_components: 1
+          strip_components: 1 # this removes the 'target/' folder prefix so the file lands directly in webapps
