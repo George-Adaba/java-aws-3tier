@@ -66,4 +66,4 @@ jobs: # this defines the jobs that will run as part of the workflow. jobs run in
           # 3. The Payload (The actual file transfer)
           source: "deploy-folder/app.war" 
           target: "/opt/tomcat/webapps/"
-          strip_components: 1 # this removes the 'target/' folder prefix so the file lands directly in webapps
+          strip_components: 0 # this removes the 'target/' folder prefix so the file lands directly in webapps
