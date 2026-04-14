@@ -33,7 +33,7 @@ jobs: # this defines the jobs that will run as part of the workflow jobs can run
         run: mvn sonar:sonar -Dsonar.projectKey=spas_project # this step runs a maven command to perform scans on the code using the token and host url
       
       - name: Upload build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: java-war
           path: target/*.war
@@ -41,8 +41,17 @@ jobs: # this defines the jobs that will run as part of the workflow jobs can run
       - name: deploy to tomcat
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.TOMCAT_IP }}
+          # 1. Connection to the Bastion (The Bridge) 
+          proxy_host: ${{ secrets.BASTION_IP }}
+          proxy_username: ec2-user
+          proxy_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+          # 2. Connection to the Tomcat (The Destination)
+          host: ${{ secrets.TOMCAT_PRIVATE_IP }}
           username: ec2-user
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: target/*.war
+          
+          # 3. The Payload
+          source: "target/*.war"
           target: "/opt/tomcat/webapps/"
+          strip_components: 1
