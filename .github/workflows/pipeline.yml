@@ -1,0 +1,48 @@
+# this is a github action workflow file that defines my pipeline for my project
+name: java-aws-3tier CI/CD Pipeline # this is the name of the workflow
+
+on: # this defines the event triggers for the workflow  it can be triggered on push, pull request, or on a schedule 
+  push:
+    branches: [ main ] # this means the workflow will only be triggered when you push to the main branch
+
+jobs: # this defines the jobs that will run as part of the workflow jobs can run sequentially or in parallel but it is parallel by default
+  build-and-deploy: # this is the name of the job
+    runs-on: ubuntu-latest # when you create a job it runs on a runner and this defines the type of runner to be used
+    permissions: # this defines the permissions for the job
+      contents: read # this gives the job read access to the repository contents
+      packages: write # this gives the job write access to the packages in the repository
+
+    steps: # this defines the steps in the job
+      - name: checkout code
+        uses: actions/checkout@v4 # this step checks out the repository so the pipeline can access its contents
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3 # this step installs Java 17 and configures Maven caching on the runner
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven' # cache Maven dependencies to speed up the build
+
+      - name: Build with Maven
+        run: mvn clean package -DskipTests # this step runs the maven command to build the project and create a war file in the target directory
+
+      - name: SonarQube Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: mvn sonar:sonar -Dsonar.projectKey=spas_project # this step runs a maven command to perform scans on the code using the token and host url
+      
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: java-war
+          path: target/*.war
+
+      - name: deploy to tomcat
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.TOMCAT_IP }}
+          username: ec2-user
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: target/*.war
+          target: "/opt/tomcat/webapps/"

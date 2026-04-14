@@ -1,0 +1,17 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion># this is the root element of the pom.xml file and it defines the project model version
+  <groupId>com.example</groupId> # this is the group id of the project, it is usually a reverse domain name to ensure uniqueness
+  <artifactId>java-aws-3tier</artifactId> # this tells us the name of the project
+  <version>0.1.0</version> # this is the version number 
+  <packaging>war</packaging> # this tells maven how to wrap your code
+  <name>java-aws-3tier</name>
+  <description>Sample Java/Tomcat application for AWS 3-tier deployment.</description>
+  <properties> # 
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+  </properties>
+  <build>
+    <finalName>app</finalName>
+  </build>
+</project>
