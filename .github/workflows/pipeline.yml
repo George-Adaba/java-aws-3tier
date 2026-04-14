@@ -11,6 +11,8 @@ jobs: # this defines the jobs that will run as part of the workflow. jobs run in
     permissions: # this defines the permissions for the job
       contents: read # this gives the job read access to the repository contents
       packages: write # this gives the job write access to the packages in the repository
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps: # this defines the steps in the job
       - name: checkout code
@@ -27,10 +29,17 @@ jobs: # this defines the jobs that will run as part of the workflow. jobs run in
         run: mvn clean package -DskipTests # this step runs the maven command to create a war file in the target directory
 
       - name: SonarQube Scan
+        if: ${{ secrets.SONAR_TOKEN && secrets.SONAR_HOST_URL && secrets.SONAR_ORGANIZATION }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: mvn sonar:sonar -Dsonar.projectKey=spas_project # this step runs code analysis using the token and host url
+          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=spas_project \
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
       
       - name: Upload build artifact
         uses: actions/upload-artifact@v4 # UPGRADED: uploads the .war file so it can be used in the deployment step
